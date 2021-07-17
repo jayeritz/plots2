@@ -173,15 +173,16 @@ class SearchService
     raise("If 'from' is not null, must contain date") if period["from"] && !(period["from"].is_a? Date)
     raise("If 'to' is not null, must contain date") if period["to"] && !(period["to"].is_a? Date)
 
-    user_locations = User.where('rusers.status <> 0')
-                         .joins(:user_tags)
-                         .where('user_tags.value LIKE ?', 'lat%')
-                         .where('REPLACE(user_tags.value, "lat:", "") BETWEEN ' + coordinates["selat"].to_s + ' AND ' + coordinates["nwlat"].to_s)
-                         .joins('INNER JOIN user_tags AS lontags ON lontags.uid = rusers.id')
-                         .where('lontags.value LIKE ?', 'lon%')
-                         .where('REPLACE(lontags.value, "lon:", "") BETWEEN ' + coordinates["nwlng"].to_s + ' AND ' + coordinates["selng"].to_s)
-                         .distinct
+    # user_locations = User.where('rusers.status <> 0')
+    #                      .joins(:user_tags)
+    #                      .where('user_tags.value LIKE ?', 'lat%')
+    #                      .where('REPLACE(user_tags.value, "lat:", "") BETWEEN ' + coordinates["selat"].to_s + ' AND ' + coordinates["nwlat"].to_s)
+    #                      .joins('INNER JOIN user_tags AS lontags ON lontags.uid = rusers.id')
+    #                      .where('lontags.value LIKE ?', 'lon%')
+    #                      .where('REPLACE(lontags.value, "lon:", "") BETWEEN ' + coordinates["nwlng"].to_s + ' AND ' + coordinates["selng"].to_s)
+    #                      .distinct
 
+    user_locations = User.select("*").where("rusers.status <> 0").joins("INNER JOIN user_tags ON rusers.id = user_tags.uid").select("SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 1), ':', -1) as type, SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 2), ':', -1) as val").having("type = 'lat' or type = 'lon'").having("(type = 'lon' AND val BETWEEN '22' AND '80') OR (type = 'lat' AND val BETWEEN '22' AND '80')").select("rusers.id").uniq
     if tag.present?
       if field.present? && field == 'node_tag'
         tids = Tag.where("term_data.name = ?", tag).collect(&:tid).uniq || []
