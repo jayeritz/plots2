@@ -182,7 +182,8 @@ class SearchService
     #                      .where('REPLACE(lontags.value, "lon:", "") BETWEEN ' + coordinates["nwlng"].to_s + ' AND ' + coordinates["selng"].to_s)
     #                      .distinct
 
-    user_locations = User.select("*").where("rusers.status <> 0").joins("INNER JOIN user_tags ON rusers.id = user_tags.uid").select("SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 1), ':', -1) as type, SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 2), ':', -1) as val").having("type = 'lat' or type = 'lon'").having("(type = 'lon' AND val BETWEEN '22' AND '80') OR (type = 'lat' AND val BETWEEN '22' AND '80')").select("rusers.id").uniq
+    # user_locations = User.select("*").where("rusers.status <> 0").joins("INNER JOIN user_tags ON rusers.id = user_tags.uid").select("SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 1), ':', -1) as type, SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 2), ':', -1) as val").having("type = 'lat' or type = 'lon'").having("(type = 'lon' AND val BETWEEN '22' AND '80') OR (type = 'lat' AND val BETWEEN '22' AND '80')").select("rusers.id").uniq
+    user_locations = User.select('*').where("rusers.status <> 0").joins("INNER JOIN user_tags ON rusers.id = user_tags.uid").select("SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 1), ':', -1) as type, SUBSTRING_INDEX(SUBSTRING_INDEX(user_tags.value, ':', 2), ':', -1) as val").having("type = 'lat' or type = 'lon' AND ((type = 'lat' AND val BETWEEN ' #{coordinates["selat"].to_s} ' AND '#{coordinates["nwlat"].to_s}') AND (type = 'lon' AND val BETWEEN '#{coordinates["nwlng"].to_s}' AND '#{coordinates["selng"].to_s}'))")
     if tag.present?
       if field.present? && field == 'node_tag'
         tids = Tag.where("term_data.name = ?", tag).collect(&:tid).uniq || []
@@ -230,7 +231,7 @@ class SearchService
           .group('`node`.`uid`')
           .order("ord #{order_direction}")
     else
-      items.order("created_at #{order_direction}")
+      items.order("rusers.created_at #{order_direction}")
             .limit(limit)
     end
   end
